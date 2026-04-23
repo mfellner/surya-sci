@@ -166,7 +166,10 @@ class SuryaModel(S3DownloaderMixin, SuryaPreTrainedModel):
                 ]
             )
 
-    def tie_weights(self):
+    def tie_weights(self, **kwargs):
+        # transformers >= 5.x calls with missing_keys/recompute_mapping kwargs; ignore
+        # them — inference-time tying is a no-op since both params are loaded from
+        # the checkpoint independently.
         self._tie_weights()
 
     def _tie_weights(self):
