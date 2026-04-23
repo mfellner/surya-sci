@@ -12,6 +12,22 @@ from transformers.modeling_outputs import (
     BaseModelOutputWithPast,
 )
 from transformers.modeling_rope_utils import ROPE_INIT_FUNCTIONS
+
+# transformers >= 5.x removed the 'default' rope init from ROPE_INIT_FUNCTIONS.
+# Surya falls back to 'default' when config.rope_scaling is None, so we
+# re-register the standard (non-scaled) RoPE formula under that name.
+if "default" not in ROPE_INIT_FUNCTIONS:
+    def _default_rope_init(config, device=None, seq_len=None, **kwargs):
+        base = getattr(config, "rope_theta", 10000.0)
+        head_dim = getattr(config, "head_dim", None)
+        if head_dim is None:
+            head_dim = config.hidden_size // config.num_attention_heads
+        inv_freq = 1.0 / (
+            base ** (torch.arange(0, head_dim, 2, dtype=torch.int64).to(device).float() / head_dim)
+        )
+        return inv_freq, 1.0
+
+    ROPE_INIT_FUNCTIONS["default"] = _default_rope_init
 from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
 from transformers.processing_utils import Unpack
 from transformers.utils import (
