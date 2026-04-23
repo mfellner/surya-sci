@@ -758,7 +758,7 @@ class SuryaXLAModel(SuryaModel):
             inputs_embeds = inputs_embeds.scatter(1, idx, image_embeddings)
 
         inputs_embeds = inputs_embeds * (
-            input_ids != self.config.pad_token_id
+            input_ids != getattr(self.config, "pad_token_id", None)
         ).unsqueeze(-1).to(inputs_embeds.dtype)
         return inputs_embeds
 

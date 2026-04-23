@@ -73,9 +73,9 @@ class SuryaTableRecConfig(S3DownloaderMixin, PretrainedConfig):
             self.pad_token_id = decoder_config["pad_token_id"]
             self.eos_token_id = decoder_config["eos_token_id"]
         else:
-            self.decoder_start_token_id = decoder_config.bos_token_id
-            self.pad_token_id = decoder_config.pad_token_id
-            self.eos_token_id = decoder_config.eos_token_id
+            self.decoder_start_token_id = getattr(decoder_config, "bos_token_id", None)
+            self.pad_token_id = getattr(decoder_config, "pad_token_id", None)
+            self.eos_token_id = getattr(decoder_config, "eos_token_id", None)
 
 
 class DonutSwinTableRecConfig(PretrainedConfig):

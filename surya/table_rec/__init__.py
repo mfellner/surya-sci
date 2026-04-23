@@ -84,7 +84,7 @@ class TableRecPredictor(BasePredictor):
                         # Process all classification logits in one operation
                         items = torch.argmax(k_logits, dim=-1)
                         if k == "category":
-                            done = (items == self.model.decoder.config.eos_token_id) | (items == self.model.decoder.config.pad_token_id)
+                            done = (items == getattr(self.model.decoder.config, "eos_token_id", None)) | (items == getattr(self.model.decoder.config, "pad_token_id", None))
                         items = items - SPECIAL_TOKENS
                         processed_logits[k] = items
                     elif mode == "regression":

@@ -10,10 +10,20 @@ from torch.nn import functional as F, MSELoss, CrossEntropyLoss, BCEWithLogitsLo
 from transformers import apply_chunking_to_forward
 from transformers.activations import get_activation
 from transformers.modeling_outputs import BaseModelOutput, SequenceClassifierOutput
-from transformers.pytorch_utils import (
-    find_pruneable_heads_and_indices,
-    prune_linear_layer,
-)
+from transformers.pytorch_utils import prune_linear_layer
+
+try:
+    from transformers.pytorch_utils import find_pruneable_heads_and_indices
+except ImportError:  # transformers >= 5.x removed this helper
+    def find_pruneable_heads_and_indices(heads, n_heads, head_size, already_pruned_heads):
+        mask = torch.ones(n_heads, head_size)
+        heads = set(heads) - already_pruned_heads
+        for head in heads:
+            head = head - sum(1 if h < head else 0 for h in already_pruned_heads)
+            mask[head] = 0
+        mask = mask.view(-1).contiguous().eq(1)
+        index = torch.arange(len(mask))[mask].long()
+        return heads, index
 
 from transformers.utils import (
     is_flash_attn_greater_or_equal_2_10,
@@ -54,7 +64,7 @@ class Embeddings(nn.Module):
     def __init__(self, config: DistilBertConfig):
         super().__init__()
         self.word_embeddings = nn.Embedding(
-            config.vocab_size, config.dim, padding_idx=config.pad_token_id
+            config.vocab_size, config.dim, padding_idx=getattr(config, "pad_token_id", None)
         )
         self.position_embeddings = nn.Embedding(
             config.max_position_embeddings, config.dim

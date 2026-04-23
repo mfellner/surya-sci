@@ -444,7 +444,7 @@ class SuryaDecoderModel(Qwen2PreTrainedModel):
 
     def __init__(self, config: SuryaDecoderConfig):
         super().__init__(config)
-        self.padding_idx = config.pad_token_id
+        self.padding_idx = getattr(config, "pad_token_id", None)
         self.vocab_size = config.vocab_size
 
         self.layers = nn.ModuleList(
