@@ -173,8 +173,18 @@ class SuryaModel(S3DownloaderMixin, SuryaPreTrainedModel):
         self._tie_weights()
 
     def _tie_weights(self):
-        # Tie weights of lm head and token embedder
-        self._tie_or_clone_weights(self.lm_head, self.embedder.token_embed)
+        # Tie lm_head.weight to the token embedder. transformers 4.x exposed
+        # _tie_or_clone_weights on PreTrainedModel; 5.x removed it. Inline
+        # the minimum: share the underlying nn.Parameter so both modules
+        # refer to the same tensor. For inference this is a defensive op —
+        # checkpoints include both weights — but it preserves the original
+        # tying semantic if one param is ever loaded and the other is not.
+        src = getattr(getattr(self, "embedder", None), "token_embed", None)
+        if src is None or not hasattr(self, "lm_head"):
+            return
+        self.lm_head.weight = src.weight
+        if getattr(self.lm_head, "bias", None) is not None and getattr(src, "bias", None) is not None:
+            self.lm_head.bias = src.bias
 
     def get_output_embeddings(self) -> nn.Module:
         return self.lm_head
