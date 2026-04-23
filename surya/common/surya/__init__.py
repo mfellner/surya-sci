@@ -105,6 +105,12 @@ class SuryaModel(S3DownloaderMixin, SuryaPreTrainedModel):
     _supports_attention_backend = True
     main_input_name = "input_ids"
     _tied_weights_keys = ["lm_head.weight"]
+    # transformers >= 5.x expects PreTrainedModel subclasses to expose an
+    # `all_tied_weights_keys` mapping (target -> source) at inference time.
+    # Surya relied on the legacy list-based `_tied_weights_keys`, so provide
+    # an empty mapping; the checkpoints we load already contain both tied
+    # params, so no runtime tying is needed.
+    all_tied_weights_keys: dict = {}
 
     def __init__(
         self,
